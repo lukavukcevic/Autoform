@@ -144,12 +144,12 @@ int main(int argc, char **argv) {
     }
     const char *statement = argv[1];
     const char *dir = argc > 2 ? argv[2] : ".";
-    int max_retries = argc > 3 ? atoi(argv[3]) : 1;
+    int max_retries = argc > 3 ? atoi(argv[3]) : 2;
 
     const char *key = getenv("GEMINI_API_KEY");
     if (!key) { fprintf(stderr, "GEMINI_API_KEY not set\n"); return 1; }
     const char *model = getenv("GEMINI_MODEL");
-    if (!model) { model = "gemini-3.5-flash-lite"; }
+    if (!model) { model = "gemini-2.5-flash"; }
 
     curl_global_init(CURL_GLOBAL_DEFAULT);
     CURL *curl = curl_easy_init();
@@ -159,12 +159,12 @@ int main(int argc, char **argv) {
     char *error = NULL;
     for (int i = 1; i <= max_retries + 1; ++i) {
         char *prompt = !code
-            ? vstr("Translate the following informal theorem into a single self-contained Lean 4 theorem "
+            ? vstr("Translate the following informal theorem into a single self-contained Lean 4 declaration "
                    "(mathlib available) that type-checks with `lake env lean`. Reply with ONLY one ```lean "
-                   "fenced code block, no other prose.\n\nInformal statement:\n%s\n", statement)
+                   "fenced code block, no other prose. The proof should be `sorry`.\n\nInformal statement:\n%s\n", statement)
             : vstr("This Lean 4 code failed to type-check with `lake env lean`.\n\nInformal statement:\n%s\n\n"
                    "Lean code:\n%s\n\nCompiler output:\n%s\n\nFix it. Reply with ONLY one corrected ```lean "
-                   "fenced code block, no other prose.\n", statement, code, error);
+                   "fenced code block (`sorry` proof), no other prose.\n", statement, code, error);
 
         printf("[%d/%d] generating Lean...\n", i, max_retries + 1);
         char *text = gemini_generate(curl, key, model, prompt);
